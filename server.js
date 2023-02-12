@@ -6,17 +6,18 @@ const {
   GraphQLString,
   GraphQLNonNull,
   GraphQLInt,
-  GraphQLList
+  GraphQLList,
+  GraphQLBoolean
 } = require("graphql")
 const app = express();
 
-const authors = [
+let authors = [
 	{ id: 1, name: 'J. K. Rowling' },
 	{ id: 2, name: 'J. R. R. Tolkien' },
 	{ id: 3, name: 'Brent Weeks' }
 ]
 
-const books = [
+let books = [
 	{ id: 1, name: 'Harry Potter and the Chamber of Secrets', authorId: 1 },
 	{ id: 2, name: 'Harry Potter and the Prisoner of Azkaban', authorId: 1 },
 	{ id: 3, name: 'Harry Potter and the Goblet of Fire', authorId: 1 },
@@ -91,8 +92,81 @@ const RootQuery = new GraphQLObjectType({
     }
   })
 })
+
+const MutationType = new GraphQLObjectType({
+  name: "Mutation",
+  description: "GraphQL Root Muatation",
+  fields: () => ({
+    addBook: {
+      type: BookType,
+      description: "Add a book",
+      args: {
+        name: { type: GraphQLNonNull(GraphQLString) },
+        authorId: { type: GraphQLNonNull(GraphQLInt) }
+      },
+      resolve: (parent, args) => {
+        const book = {
+          id: books.length + 1,
+          name: args.name,
+          authorId: args.authorId
+        }
+        books.push(book);
+        return book;
+      }
+    },
+    deleteBook: {
+      type: BookType,
+      description: "Delete a book",
+      args: {
+        id: { type: GraphQLNonNull(GraphQLInt) }
+      },
+      resolve: (parent, args) => {
+        const book = books.find(book => book.id === args.id)
+        if (book)
+        {
+          books = books.filter(book => book.id !== args.id);
+          return book;
+        }
+        return null;
+      }
+    },
+    addAuthor: {
+      type: AuthorType,
+      description: "Add new author",
+      args: {
+        name: { type: GraphQLNonNull(GraphQLString) }
+      },
+      resolve: (parent, args) => {
+        const author = {
+          id: authors.length + 1,
+          name: args.name
+        };
+        authors.push(author);
+        return author;
+      }
+    },
+    deleteAuthor: {
+      type: AuthorType,
+      description: "Delete a book",
+      args: {
+        id: { type: GraphQLNonNull(GraphQLInt) }
+      },
+      resolve: (parent, args) => {
+        const author = authors.find(author => author.id === args.id)
+        if (author)
+        {
+          authors = authors.filter(author => author.id !== args.id);
+          return author;
+        }
+        return null;
+      }
+    }
+  })
+})
+
 const schema = new GraphQLSchema({
-  query: RootQuery
+  query: RootQuery,
+  mutation: MutationType
 })
 app.use("/graphql", graphqlHTTP({
   schema: schema,
